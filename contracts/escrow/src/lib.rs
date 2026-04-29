@@ -219,6 +219,7 @@ impl EscrowContract {
         let client = token::Client::new(&env, &m.token);
         client
             .try_transfer(&player, &env.current_contract_address(), &m.stake_amount)
+            .map_err(|_| Error::TransferFailed)?
             .map_err(|_| Error::TransferFailed)?;
 
         if is_p1 {
@@ -243,7 +244,7 @@ impl EscrowContract {
 
         env.events().publish(
             (Symbol::new(&env, "match"), symbol_short!("deposit")),
-            (match_id, player),
+            (match_id, player, m.stake_amount),
         );
 
         env.storage()

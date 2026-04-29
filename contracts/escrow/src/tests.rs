@@ -1,3 +1,4 @@
+extern crate std;
 use super::*;
 use soroban_sdk::{
     testutils::{storage::Persistent as _, Address as _, Events},
@@ -899,20 +900,29 @@ fn test_deposit_emits_event() {
         &String::from_str(&env, "deposit_ev"),
         &Platform::Lichess,
     );
+    
+    // Test player1 deposit
     client.deposit(&id, &player1);
 
+    client.deposit(&id, &player2);
+    
     let events = env.events().all();
-    let topics = vec![
+    let deposit_topics = vec![
         &env,
         Symbol::new(&env, "match").into_val(&env),
         soroban_sdk::symbol_short!("deposit").into_val(&env),
     ];
-    let matched = events.iter().find(|(_, t, _)| *t == topics);
-    assert!(matched.is_some());
+    let deposit_events: std::vec::Vec<_> = events.iter().filter(|(_, t, _)| *t == deposit_topics).collect();
+    
+    assert_eq!(deposit_events.len(), 2);
+    
+    let (_, _, data1) = deposit_events[0];
+    let (ev_id1, ev_player1, ev_amount1): (u64, Address, i128) = TryFromVal::try_from_val(&env, &data1).unwrap();
+    assert_eq!((ev_id1, ev_player1, ev_amount1), (id, player1, 100));
 
-    let (_, _, data) = matched.unwrap();
-    let (ev_id, ev_player): (u64, Address) = TryFromVal::try_from_val(&env, &data).unwrap();
-    assert_eq!((ev_id, ev_player), (id, player1));
+    let (_, _, data2) = deposit_events[1];
+    let (ev_id2, ev_player2, ev_amount2): (u64, Address, i128) = TryFromVal::try_from_val(&env, &data2).unwrap();
+    assert_eq!((ev_id2, ev_player2, ev_amount2), (id, player2, 100));
 }
 
 #[test]
